@@ -1,0 +1,60 @@
+version: '3.9'
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    restart: always
+    hostname: rabbitmq
+    networks:
+      - mynetwork
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: "exit 0"
+
+  server-app:
+    image: server-app
+    build: server
+    container_name: server-app
+    restart: always
+    networks:
+      - mynetwork
+    hostname: server-app
+    ports:
+      - 8089:8089
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: "exit 0"
+
+  text-analyzer:
+    image: text-analyzer
+    build: text_analyzer
+    container_name: text-analyzer
+    restart: always
+    networks:
+      - mynetwork
+    depends_on:
+      - server-app
+    deploy:
+      mode: replicated
+      replicas: 3
+
+  client:
+    image: client
+    build:
+      context: ./client
+      args:
+        - SERVER_URL=${SERVER_URL}
+    container_name: client
+    restart: always
+    ports:
+      - 3000:3000
+    depends_on:
+      - server-app
+
+networks:
+  mynetwork:
