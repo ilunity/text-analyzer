@@ -12,12 +12,10 @@ interface DataType {
 export const TagsTable: React.FC<TagsTableProps> = ({ tags }) => {
   const columns: ColumnsType<DataType> = [
     {
-      // key: 'name',
       dataIndex: 'name',
       title: 'Тег',
     },
     {
-      // key: 'value',
       dataIndex: 'value',
       title: 'Оценка',
     },

@@ -42,7 +42,7 @@ export const UploadFilePage: React.FC<UploadFilePageProps> = () => {
       if (success) {
         setPagePayload({
           page: APP_PAGES.RESULT,
-          data: convertTagsType(data),
+          data: status === 204 ? [] : convertTagsType(data),
         });
       } else {
         setPagePayload({
@@ -59,18 +59,18 @@ export const UploadFilePage: React.FC<UploadFilePageProps> = () => {
     <CenterWrapper>
       <Form
         name="upload-file"
-        onFinish={ onFinish }
-        style={ { width: 395 } }
-        form={ form }
-        initialValues={ {
+        onFinish={onFinish}
+        style={{ width: 395 }}
+        form={form}
+        initialValues={{
           fileList: [],
-        } }
+        }}
       >
         <Form.Item<FieldType> name="fileList" noStyle>
           <UploadFile />
         </Form.Item>
-        <Form.Item<FieldType> style={ { width: '100%', marginTop: hasLoaded ? 4 : 34 } }>
-          <Button block type="primary" htmlType="submit" disabled={ !hasLoaded }>
+        <Form.Item<FieldType> style={{ width: '100%', marginTop: hasLoaded ? 4 : 34 }}>
+          <Button block type="primary" htmlType="submit" disabled={!hasLoaded}>
             Продолжить
           </Button>
         </Form.Item>
