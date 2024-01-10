@@ -4,11 +4,16 @@ package org.download.controller;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFPictureData;
 import org.download.exception.InvalidFileException;
 import org.download.rabbit.RabbitMQConsumer;
 import org.download.rabbit.RabbitMQPublisher;
@@ -50,42 +55,37 @@ public class FileUploadController {
         this.storageService = storageService;
     }
 
-    @GetMapping("/")
-    public String listUploadedFiles(Model model) throws IOException {
-
-        model.addAttribute("files",
-                storageService.loadAll().map(
-                                path -> MvcUriComponentsBuilder.
-                                        fromMethodName(FileUploadController.class,
-                                                "serveFile", path.
-                                                        getFileName().
-                                                        toString()).build().toUri().toString())
-                        .collect(Collectors.toList()));
-
-        return "uploadForm";
-    }
-
     @Async
     @PostMapping("/analyse")
     public CompletableFuture<ResponseEntity<String>> handleFileUpload(@RequestParam("file") MultipartFile file) {
         logger.info("Handling handleFileUpload request");
 
         return CompletableFuture.supplyAsync(() -> {
-            Map<String, Object> response = storageService.handleFileUpload(file);
-            HttpStatus status = HttpStatus.OK;
+            if (file.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Загруженный файл пуст");
+            }  else {
+                if (storageService.containsText(file)) {
+                    // Дальнейшие действия при наличии текста в файле
+                    Map<String, Object> response = storageService.handleFileUpload(file);
+                    HttpStatus status = HttpStatus.OK;
 
-            if (response.get("status") != null && response.get("status").equals("success")) {
-                try {
-                    Integer id = getNextId();
-                    rabbitMQPublisher.sendFileToQueue(id, file.getBytes(), file.getOriginalFilename());
-                    rabbitMQConsumer.listenForResultsAndSendToFrontend();
+                    if (response.get("status") != null && response.get("status").equals("success")) {
+                        try {
+                            Integer id = storageService.getNextId();
+                            rabbitMQPublisher.sendFileToQueue(id, file.getBytes(), file.getOriginalFilename());
+                            rabbitMQConsumer.listenForResultsAndSendToFrontend();
 
-                    return new ResponseEntity<>(id.toString(), status);
-                } catch (IOException e) {
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send file to processing queue");
+                            storageService.delete(file.getOriginalFilename());
+                            return new ResponseEntity<>(id.toString(), status);
+                        } catch (IOException e) {
+                            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ошибка отправки файла в очередь обработки");
+                        }
+                    } else {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, (String) response.get("message"));
+                    }
+                } else {
+                    throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Файл не содержит текста ");
                 }
-            } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, (String) response.get("message"));
             }
         });
     }
@@ -115,10 +115,10 @@ public class FileUploadController {
                 if (!result.isEmpty()) {
                     return CompletableFuture.completedFuture(new ResponseEntity<>(result, HttpStatus.OK));
                 } else {
-                    // Если результат пуст, возвращаем ошибку
-                    Map<String, Double> emptyResultError = new HashMap<>();
-                    emptyResultError.put("error", 404.0);
-                    return CompletableFuture.completedFuture(new ResponseEntity<>(emptyResultError, HttpStatus.NOT_FOUND));
+                    // Если результат пуст, возвращаем 204
+                    Map<String, Double> ResultNull = new HashMap<>();
+                    ResultNull.put("status", 204.0);
+                    return CompletableFuture.completedFuture(new ResponseEntity<>(ResultNull, HttpStatus.NO_CONTENT));
                 }
             }
         } catch (NumberFormatException e) {
@@ -129,12 +129,7 @@ public class FileUploadController {
         }
     }
 
-    private Integer currentId = 0;
 
-    private synchronized Integer getNextId() {
-        currentId++;
-        return currentId;
-    }
 
     @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
@@ -145,23 +140,4 @@ public class FileUploadController {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(exc.getMessage());
     }
 
-
-    @GetMapping("/files/{filename:.+}")
-    @ResponseBody
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-
-        Resource file = storageService.loadAsResource(filename);
-
-        if (file == null)
-            return ResponseEntity.notFound().build();
-
-        ContentDisposition contentDisposition = ContentDisposition.builder("attachment")
-                .filename(file.getFilename(), StandardCharsets.UTF_8) // here is the change
-                .build();
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
-                .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                .body(file);
-    }
 }

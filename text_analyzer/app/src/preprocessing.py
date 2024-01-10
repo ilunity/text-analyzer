@@ -23,9 +23,11 @@ class Pipeline:
         self.text = ''
 
     def _softmax(self, l):
-    	summ = l.sum()
-    	l_to_return = [i/summ for i in l]
-    	return l_to_return
+        summ = l.sum()
+        if summ != 0:
+            l_to_return = [i/summ for i in l]
+            return l_to_return
+        return l
 
     def _preprocess_text(self):
         self.text = re.sub(self.patterns, ' ', self.text)
@@ -40,10 +42,12 @@ class Pipeline:
         text_emb = self.model.transform([self.text])
         cosine_sim = np.array([cosine_similarity(tag_emb, text_emb)[0][0] for tag_emb in self.tags_embs])
         softmax_result = self._softmax(cosine_sim)
-
         tags = dict([(key, value) for i, (key, value) in enumerate(zip(self.tags_names, softmax_result))])
+        if max(tags.values()) == 0:
+            self.tags = tags
         tags = dict(sorted(tags.items(), key=lambda item: item[1]))
-        self.tags = {k:tags[k] for k in list(tags.keys())[-6:]}
+        
+        self.tags = {k:tags[k] for k in list(tags.keys())[-6:] if tags[k]!=0}
 
     def process(self):
         self._preprocess_text()

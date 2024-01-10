@@ -36,17 +36,21 @@ public class RabbitMQPublisher {
             byte[] extractedTextBytes = extractedText.getBytes("UTF-8");
             byte[]  extractedTextBytesBase64 = Base64.getEncoder().encode(extractedTextBytes);
 
-            AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
-                    .contentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    .contentEncoding("UTF-8")
-                    //.headers(Collections.singletonMap("file_name", fileName))
-                    .headers(Collections.singletonMap("id", id))
-                    .build();
+            if (extractedTextBytesBase64.length > 2000000) {
+                // обработка случая, когда текст превышает 1 миллион символов
+                System.out.println("Text length exceeds 1 million characters. Cannot send to queue.");
+            } else {
+                // отправка сообщения в очередь
+                AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
+                        .contentType("text/plain")
+                        .contentEncoding("UTF-8")
+                        .headers(Collections.singletonMap("id", id))
+                        .build();
 
-            // Определяем долговечность и тип очереди
-            channel.queueDeclare(QUEUE_NAME, true, false, false, null); // durable, not exclusive, not auto-delete
-            channel.basicPublish("", QUEUE_NAME, properties, extractedTextBytesBase64); //encodedFileData
-            System.out.println(" [x] Sent file to queue id:" +  id);
+                channel.queueDeclare(QUEUE_NAME, true, false, false, null);
+                channel.basicPublish("", QUEUE_NAME, properties, extractedTextBytesBase64);
+                System.out.println(" [x] Sent file to queue id:" +  id);
+            }
 
         } catch (IOException | TimeoutException e) {
             e.printStackTrace();

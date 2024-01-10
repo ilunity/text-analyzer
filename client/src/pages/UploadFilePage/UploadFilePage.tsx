@@ -7,7 +7,7 @@ import { api } from '../../utils/api.ts';
 import { CenterWrapper } from '../../components/CenterWrapper';
 import { executeRequest } from '../../utils/execute-request.ts';
 import { APP_PAGES, useCurrentPageContext } from '../../components/CurrentPageContextProvider/context.ts';
-import { convertTagsType } from '../../utils/convert-tags-type.ts';
+import { QueryResultLoop } from './query-result-loop.ts';
 
 type FieldType = {
   fileList: UploadChangeParam['file'][];
@@ -26,33 +26,14 @@ export const UploadFilePage: React.FC<UploadFilePageProps> = () => {
     const { success, data: id, error, status } = await executeRequest(() => api.analyseText(file));
 
     if (!success) {
-      setPagePayload({
+      return setPagePayload({
         page: APP_PAGES.ERROR,
         data: { status, message: error },
       });
     }
 
-    const interval = setInterval(async () => {
-      const { success, data, error, status } = await executeRequest(() => api.getAnalyseResult(id as string));
-
-      if (status === 202) {
-        return;
-      }
-
-      if (success) {
-        setPagePayload({
-          page: APP_PAGES.RESULT,
-          data: convertTagsType(data),
-        });
-      } else {
-        setPagePayload({
-          page: APP_PAGES.ERROR,
-          data: { status, message: error },
-        });
-      }
-
-      clearInterval(interval);
-    }, 3000);
+    const queryResultLoop = new QueryResultLoop(setPagePayload);
+    queryResultLoop.run(id as string);
   };
 
   return (

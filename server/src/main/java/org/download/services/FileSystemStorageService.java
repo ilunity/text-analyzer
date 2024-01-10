@@ -14,24 +14,26 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.download.config.StorageProperties;
 import org.download.exception.InvalidFileException;
 import org.download.exception.StorageException;
 import org.download.exception.StorageFileNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.*;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,6 +56,35 @@ public class FileSystemStorageService implements StorageService {
 
     @Autowired
     private RestTemplate restTemplate;
+    private Integer currentId = 0;
+
+    @Override
+    public Integer getNextId() {
+        synchronized (currentId) {
+            currentId++;
+            return currentId;
+        }
+    }
+
+    @Override
+    public boolean containsText(MultipartFile file) {
+        try {
+            if (file.getOriginalFilename().endsWith(".docx")) {
+                XWPFDocument document = new XWPFDocument(file.getInputStream());
+                List<XWPFParagraph> paragraphs = document.getParagraphs();
+                for (XWPFParagraph paragraph : paragraphs) {
+                    if (!paragraph.getText().isEmpty()) {
+                        return true; // Возвращаем true, если в документе найден хотя бы один непустой текстовый параграф
+                    }
+                }
+                return false; // Если в документе не найден ни один непустой текстовый параграф
+            } else {
+                throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Неподдерживаемый формат файла. Требуется .docx");
+            }
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ошибка при проверке файла");
+        }
+    }
 
     @Override
     public Map<String, Object> handleFileUpload(MultipartFile file) {
@@ -163,6 +194,15 @@ public class FileSystemStorageService implements StorageService {
         FileSystemUtils.deleteRecursively(rootLocation.toFile());
     }
 
+    @Override
+    public void delete(String fileName) {
+        Path filePath = this.rootLocation.resolve(fileName).normalize().toAbsolutePath();
+        try {
+            Files.delete(filePath);
+        } catch (IOException e) {
+            throw new StorageException("Failed to delete file: " + fileName, e);
+        }
+    }
     @Override
     public void init() {
         try {

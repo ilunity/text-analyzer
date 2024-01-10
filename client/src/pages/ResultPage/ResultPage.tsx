@@ -6,10 +6,13 @@ import { TagsTable } from '../../components/TagsTable';
 import { PieChart } from '../../components/PieChart';
 import { ChartDownloadRef } from '../../components/PieChart/PieChart.types.ts';
 import { useGoToUpload } from '../../utils/useGoToUpload.ts';
+import { EmptyResult } from '../../components/EmptyResult';
 
 export const ResultPage: React.FC<ResultPageProps> = ({ tags }) => {
   const chartRef = useRef<ChartDownloadRef>(null);
   const goToUpload = useGoToUpload();
+
+  const isEmptyResult = tags.length === 0;
 
   return (
     <Flex
@@ -29,21 +32,26 @@ export const ResultPage: React.FC<ResultPageProps> = ({ tags }) => {
         <Button size={ 'large' } icon={ <ArrowLeftOutlined /> } onClick={ goToUpload }>
           Вернуться к выбору документа
         </Button>
-        <Button
-          size={ 'large' }
-          type={ 'primary' }
-          icon={ <UploadOutlined /> }
-          onClick={ () => {
-            chartRef.current?.download();
-          } }
-        >
-          Сохранить диаграмму
-        </Button>
+        { !isEmptyResult &&
+          <Button
+            size={ 'large' }
+            type={ 'primary' }
+            icon={ <UploadOutlined /> }
+            onClick={ () => {
+              chartRef.current?.download();
+            } }
+          >
+            Сохранить диаграмму
+          </Button>
+        }
       </Space>
-      <Flex gap={ 70 }>
-        <TagsTable tags={ tags } />
-        <PieChart ref={ chartRef } data={ tags } />
-      </Flex>
+      { isEmptyResult
+        ? <EmptyResult />
+        : <Flex gap={ 70 }>
+          <TagsTable tags={ tags } />
+          <PieChart ref={ chartRef } data={ tags } />
+        </Flex>
+      }
     </Flex>
   );
 };
