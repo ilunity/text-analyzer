@@ -26,8 +26,16 @@ public interface StorageService {
     Resource loadAsResource(String filename);
 
     void deleteAll();
+    void delete(String fileName);
 
     String sendFileToOtherService(MultipartFile file);
 
     Map<String, Object> handleFileUpload(MultipartFile file);
+
+     boolean containsText(MultipartFile file);
+
+    public Integer getNextId();
+
+
+
 }

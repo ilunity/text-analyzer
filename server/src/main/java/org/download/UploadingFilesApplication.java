@@ -1,6 +1,5 @@
 package org.download;
 
-import org.download.config.RabbitMQConfiguration;
 import org.download.config.StorageProperties;
 import org.download.services.StorageService;
 import org.springframework.boot.CommandLineRunner;
