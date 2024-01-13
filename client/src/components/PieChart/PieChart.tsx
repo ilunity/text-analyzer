@@ -6,18 +6,21 @@ import { BasePlot } from '@ant-design/charts';
 export const PieChart = forwardRef<ChartDownloadRef, PieChartProps>(({ data }, ref) => {
   const [chart, setChart] = useState<BasePlot>();
 
+  const roundedData = data.map(({ value, name }) =>
+    ({ name: `${name} (${value.toFixed(3)})`, value}));
+
   const config = {
     height: 400,
     width: 700,
     appendPadding: 10,
-    data,
+    data: roundedData,
     angleField: 'value',
     colorField: 'name',
     radius: 0.75,
     label: {
       type: 'spider',
       labelHeight: 28,
-      content: '{name}\n{percentage}',
+      content: '{name}',
     },
     interactions: [
       {
