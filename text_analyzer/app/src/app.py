@@ -4,6 +4,7 @@ import base64
 import pika
 from preprocessing import Pipeline
 from rabbit_connection import RabbitMQConnection
+from sigterm_handler import SigtermHandler
 
 pipeline = Pipeline()
 
@@ -24,6 +25,8 @@ def publishTagsAndId(user_id, tags: dict):
 
 
 def callback(ch, method, properties, body):
+    sigterm_handler.start_text_processing()
+
     file_id = properties.headers.get('id')
 
     if file_id is not None:
@@ -38,7 +41,10 @@ def callback(ch, method, properties, body):
     processed_tags = pipeline.get_tags()
     publishTagsAndId(file_id, processed_tags)
 
+    sigterm_handler.finish_text_processing()
 
+
+sigterm_handler = SigtermHandler()
 rabbit_connection = RabbitMQConnection()
 rabbit_connection.connect()
 channel = rabbit_connection.get_channel()
