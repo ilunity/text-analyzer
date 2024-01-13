@@ -12,13 +12,16 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     healthcheck:
       test: "exit 0"
 
   server-app:
-    image: server-app
+    image: ilunity/text-analyzer-server-app
     build: server
-    container_name: server-app
     restart: always
     networks:
       - mynetwork
@@ -27,34 +30,44 @@ services:
       - 8089:8089
     depends_on:
       - rabbitmq
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     healthcheck:
       test: "exit 0"
 
   text-analyzer:
-    image: text-analyzer
+    image: ilunity/text-analyzer
     build: text_analyzer
-    container_name: text-analyzer
     restart: always
     networks:
       - mynetwork
     depends_on:
       - server-app
+    stop_grace_period: 5m
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
 
   client:
-    image: client
+    image: ilunity/text-analyzer-client
     build:
       context: ./client
       args:
         - SERVER_URL=${SERVER_URL}
-    container_name: client
     restart: always
     ports:
       - 3000:3000
     depends_on:
       - server-app
+    deploy:
+      resources:
+        limits:
+          memory: 300M
 
 networks:
   mynetwork:
