@@ -61,11 +61,16 @@ public class FileUploadController {
         logger.info("Handling handleFileUpload request");
 
         return CompletableFuture.supplyAsync(() -> {
-            if (file.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Загруженный файл пуст");
+            if (file.isEmpty() || !storageService.containsText(file)) {
+                throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Загруженный файл пуст/Файл не содержит текста");
             }  else {
-                if (storageService.containsText(file)) {
-                    // Дальнейшие действия при наличии текста в файле
+                // Дальнейшие действия при наличии текста в файле
+                try{
+                    // Лимит в 4 млн знаков включая пробелы
+                    if (storageService.countChar(file) > 4000000) {
+                        throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Превышен лимит символов в тексте, больше 4 млн");
+                    }
+
                     Map<String, Object> response = storageService.handleFileUpload(file);
                     HttpStatus status = HttpStatus.OK;
 
@@ -83,8 +88,8 @@ public class FileUploadController {
                     } else {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, (String) response.get("message"));
                     }
-                } else {
-                    throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Файл не содержит текста ");
+                }catch (IOException e){
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ошибка обработки файла");
                 }
             }
         });
