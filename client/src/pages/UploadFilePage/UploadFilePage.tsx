@@ -3,15 +3,14 @@ import { UploadFilePageProps } from './UploadFilePage.types';
 import { Button, Form } from 'antd';
 import { UploadFile } from '../../components/UploadFile';
 import { RcFile, UploadChangeParam } from 'antd/es/upload';
-import { api } from '../../utils/api.ts';
 import { CenterWrapper } from '../../components/CenterWrapper';
-import { executeRequest } from '../../utils/execute-request.ts';
 import { APP_PAGES, useCurrentPageContext } from '../../components/CurrentPageContextProvider/context.ts';
-import { QueryResultLoop } from './query-result-loop.ts';
+import { AnalyseTextRequest } from './analyse-text-request.ts';
 
 type FieldType = {
   fileList: UploadChangeParam['file'][];
 };
+
 
 export const UploadFilePage: React.FC<UploadFilePageProps> = () => {
   const [form] = Form.useForm<FieldType>();
@@ -23,17 +22,8 @@ export const UploadFilePage: React.FC<UploadFilePageProps> = () => {
     const file = values.fileList[0].originFileObj as RcFile;
     setPagePayload({ page: APP_PAGES.LOADING, data: null });
 
-    const { success, data: id, error, status } = await executeRequest(() => api.analyseText(file));
-
-    if (!success) {
-      return setPagePayload({
-        page: APP_PAGES.ERROR,
-        data: { status, message: error },
-      });
-    }
-
-    const queryResultLoop = new QueryResultLoop(setPagePayload);
-    queryResultLoop.run(id as string);
+    const analyseTextRequest = new AnalyseTextRequest(setPagePayload);
+    await analyseTextRequest.execute(file);
   };
 
   return (

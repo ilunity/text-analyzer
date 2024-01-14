@@ -2,17 +2,17 @@ import { AxiosError } from 'axios';
 import { IApiError } from './api.types.ts';
 
 interface IErrorResponseBody {
+  error: string;
   status: number;
-  statusText: string;
 }
 
 export const defineAxiosError = (error: AxiosError<IErrorResponseBody>): IApiError => {
   if (error.response) {
-    const responseBody = error.response;
+    const responseBody = error.response.data;
 
     return {
       status: responseBody.status,
-      message: responseBody.statusText,
+      message: responseBody.error,
     };
   }
 
