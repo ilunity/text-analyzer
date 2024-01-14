@@ -11,10 +11,10 @@ enum QUERY_RESULT_STATUSES {
   REQUEST_TIMEOUT = 208,
 }
 
-export class QueryResultLoop {
+export class ResultRequestLoop {
   private currentRetries = 0;
   private setPayload: Dispatch<SetStateAction<CurrentPagePayload>>;
-  private MAX_RETRIES = 10;
+  private MAX_RETRIES = 100;
   private currentIntervalId = 0;
   private TIMEOUT = 3000;
 
