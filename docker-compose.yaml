@@ -20,7 +20,7 @@ services:
       test: "exit 0"
 
   server-app:
-    image: ilunity/text-analyzer-server-app
+    image: text-analyzer-server-app
     build: server
     restart: always
     networks:
@@ -38,7 +38,7 @@ services:
       test: "exit 0"
 
   text-analyzer:
-    image: ilunity/text-analyzer
+    image: text-analyzer
     build: text_analyzer
     restart: always
     networks:
@@ -54,7 +54,7 @@ services:
           memory: 1G
 
   client:
-    image: ilunity/text-analyzer-client
+    image: text-analyzer-client
     build:
       context: ./client
       args:
