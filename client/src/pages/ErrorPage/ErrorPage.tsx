@@ -2,7 +2,7 @@ import React from 'react';
 import { ErrorPageProps } from './ErrorPage.types';
 import { Button, Result, ResultProps } from 'antd';
 import { CenterWrapper } from '../../components/CenterWrapper';
-import { useGoToUpload } from '../../utils/useGoToUpload.ts';
+import { useGoToUpload } from '../../utils/use-go-to-upload.ts';
 
 
 export const ErrorPage: React.FC<ErrorPageProps> = ({ status, message }) => {

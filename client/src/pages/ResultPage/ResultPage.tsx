@@ -5,8 +5,9 @@ import { ArrowLeftOutlined, UploadOutlined } from '@ant-design/icons';
 import { TagsTable } from '../../components/TagsTable';
 import { PieChart } from '../../components/PieChart';
 import { ChartDownloadRef } from '../../components/PieChart/PieChart.types.ts';
-import { useGoToUpload } from '../../utils/useGoToUpload.ts';
+import { useGoToUpload } from '../../utils/use-go-to-upload.ts';
 import { EmptyResult } from '../../components/EmptyResult';
+import './ResultPage.css';
 
 export const ResultPage: React.FC<ResultPageProps> = ({ tags }) => {
   const chartRef = useRef<ChartDownloadRef>(null);
@@ -47,7 +48,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ tags }) => {
       </Space>
       { isEmptyResult
         ? <EmptyResult />
-        : <Flex gap={ 70 }>
+        : <Flex className={ 'result-wrapper' } gap={ 70 }>
           <TagsTable tags={ tags } />
           <PieChart ref={ chartRef } data={ tags } />
         </Flex>

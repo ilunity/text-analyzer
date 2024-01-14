@@ -31,15 +31,10 @@ public class RabbitMQPublisher {
     public void sendFileToQueue(Integer id ,byte[] fileData, String fileName) {
         try (Connection connection = connectionFactory.createConnection();
              Channel channel = connection.createChannel(false)) {
-            // Кодируем содержимое файла
+
             String extractedText = extractTextFromDocx(fileData);
             byte[] extractedTextBytes = extractedText.getBytes("UTF-8");
-            byte[]  extractedTextBytesBase64 = Base64.getEncoder().encode(extractedTextBytes);
 
-            if (extractedTextBytesBase64.length > 2000000) {
-                // обработка случая, когда текст превышает 1 миллион символов
-                System.out.println("Text length exceeds 1 million characters. Cannot send to queue.");
-            } else {
                 // отправка сообщения в очередь
                 AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
                         .contentType("text/plain")
@@ -47,10 +42,10 @@ public class RabbitMQPublisher {
                         .headers(Collections.singletonMap("id", id))
                         .build();
 
+
                 channel.queueDeclare(QUEUE_NAME, true, false, false, null);
-                channel.basicPublish("", QUEUE_NAME, properties, extractedTextBytesBase64);
+                channel.basicPublish("", QUEUE_NAME, properties, extractedTextBytes);
                 System.out.println(" [x] Sent file to queue id:" +  id);
-            }
 
         } catch (IOException | TimeoutException e) {
             e.printStackTrace();

@@ -42,7 +42,6 @@ public class RabbitMQConsumer {
                 AMQP.BasicProperties properties = delivery.getProperties();
                 Map<String, Object> headers = properties.getHeaders();
 
-
                 Integer id = (Integer) headers.get("id");
 
                 // Получаем тело сообщения

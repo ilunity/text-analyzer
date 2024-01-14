@@ -1,6 +1,5 @@
 package org.download.services;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -21,6 +20,7 @@ import java.util.stream.Stream;
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.download.config.StorageProperties;
 import org.download.exception.InvalidFileException;
 import org.download.exception.StorageException;
@@ -67,17 +67,38 @@ public class FileSystemStorageService implements StorageService {
     }
 
     @Override
+    public Integer countChar(MultipartFile file) throws IOException {
+        if (file.getOriginalFilename().endsWith(".docx")) {
+            XWPFDocument document = new XWPFDocument(file.getInputStream());
+            int charCount = 0;
+
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                charCount += paragraph.getText().length();
+            }
+
+            return charCount;
+        } else {
+            throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Неподдерживаемый формат файла. Требуется .docx");
+        }
+    }
+
+
     public boolean containsText(MultipartFile file) {
         try {
             if (file.getOriginalFilename().endsWith(".docx")) {
                 XWPFDocument document = new XWPFDocument(file.getInputStream());
                 List<XWPFParagraph> paragraphs = document.getParagraphs();
+
                 for (XWPFParagraph paragraph : paragraphs) {
-                    if (!paragraph.getText().isEmpty()) {
-                        return true; // Возвращаем true, если в документе найден хотя бы один непустой текстовый параграф
+                    for (XWPFRun run : paragraph.getRuns()) {
+                        if (run.getEmbeddedPictures().size() == 0 && !run.text().isEmpty()) {
+                            // Возвращаем true, если найден текстовый блок без встроенных изображений, содержащий текст.
+                            return true;
+                        }
                     }
                 }
-                return false; // Если в документе не найден ни один непустой текстовый параграф
+                // не найден текст или все текстовые блоки только с изображениями.
+                return false;
             } else {
                 throw new ResponseStatusException(HttpStatus.NO_CONTENT, "Неподдерживаемый формат файла. Требуется .docx");
             }
