@@ -5,7 +5,6 @@ from nltk.corpus import stopwords
 import numpy as np
 import pickle
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import MinMaxScaler
 
 nltk.download('stopwords', quiet=True)
 nltk.download('punkt', quiet=True)

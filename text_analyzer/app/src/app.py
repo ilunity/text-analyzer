@@ -1,5 +1,4 @@
 import json
-import base64
 
 import pika
 from preprocessing import Pipeline
@@ -32,7 +31,7 @@ def callback(ch, method, properties, body):
         print("Received file with missing or incomplete header information")
         return
 
-    text = base64.b64decode(body).decode('utf-8')
+    text = body
     pipeline.set_text(text)
     pipeline.process()
     processed_tags = pipeline.get_tags()
