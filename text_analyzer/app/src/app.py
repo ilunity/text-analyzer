@@ -7,6 +7,7 @@ from sigterm_handler import SigtermHandler
 
 pipeline = Pipeline()
 
+
 def publishTagsAndId(user_id, tags: dict):
     message = json.dumps(tags)
 
@@ -34,7 +35,7 @@ def callback(ch, method, properties, body):
         print("Received file with missing or incomplete header information")
         return
 
-    text = body
+    text = body.decode('utf-8', 'ignore')
     pipeline.set_text(text)
     pipeline.process()
     processed_tags = pipeline.get_tags()
